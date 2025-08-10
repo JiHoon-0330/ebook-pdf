@@ -36,10 +36,24 @@ except Exception:
 
 
 class AppManager:
-  def __init__(self):
+  def __init__(self, pdf_output_path: Optional[str] = None):
     self.base_dir = Path(__file__).resolve().parent
     self.screenshots_dir = self.base_dir / "screenshots"
     self.screenshots_dir.mkdir(parents=True, exist_ok=True)
+
+    # PDF 출력 경로 설정
+    if pdf_output_path:
+      # ~ (홈 디렉토리) 경로 확장
+      expanded_path = Path(pdf_output_path).expanduser()
+      self.pdf_path = expanded_path
+      # 확장자가 없으면 .pdf 추가
+      if not self.pdf_path.suffix:
+        self.pdf_path = self.pdf_path.with_suffix('.pdf')
+      # 상대 경로면 현재 디렉토리 기준으로 변환
+      if not self.pdf_path.is_absolute():
+        self.pdf_path = self.base_dir / self.pdf_path
+    else:
+      self.pdf_path = self.base_dir / "ebook.pdf"
 
     # 시작 시 스크린샷 폴더 비우기
     self._clear_screenshots_folder()
@@ -462,7 +476,11 @@ class AppManager:
       else:
         console.print("[blue]1장의 이미지로 PDF를 생성합니다.[/blue]")
 
-      pdf_path = self.base_dir / "ebook.pdf"
+      # 클래스 속성에서 PDF 경로 사용
+      pdf_path = self.pdf_path
+
+      # 디렉토리가 존재하지 않으면 생성
+      pdf_path.parent.mkdir(parents=True, exist_ok=True)
 
       # 첫 번째 이미지로 최적 크기 계산
       first_image = image_files[0]
@@ -549,6 +567,19 @@ class AppManager:
           f"[blue]총 페이지 수: {len(image_files)}장, 파일 크기: {file_size_mb:.2f} MB[/blue]")
       console.print(
           f"[blue]각 페이지: {page_width}x{page_height} 픽셀 (비율: {ratio:.2f})[/blue]")
+
+      # PDF 생성 완료 후 모든 이미지 파일 삭제
+      console.print("[blue]PDF 생성 완료 후 이미지 파일들을 정리합니다...[/blue]")
+      deleted_count = 0
+      for image_file in sorted(self.screenshots_dir.glob("*.png")):
+        try:
+          image_file.unlink()
+          deleted_count += 1
+        except Exception as e:
+          console.print(f"[yellow]이미지 삭제 실패: {image_file.name} - {e}[/yellow]")
+
+      if deleted_count > 0:
+        console.print(f"[green]{deleted_count}개의 이미지 파일을 삭제했습니다.[/green]")
 
     except Exception as e:
       console.print(f"[red]최적화된 PDF 생성 실패: {e}[/red]")
@@ -643,7 +674,14 @@ def main():
       title="시작"
   ))
 
-  app_manager = AppManager()
+  # PDF 출력 경로 설정 - 여기서 원하는 경로를 지정할 수 있습니다
+  # 예시:
+  # app_manager = AppManager("my_book.pdf")           # 현재 폴더에 my_book.pdf
+  # app_manager = AppManager("books/chapter1.pdf")    # books 폴더에 chapter1.pdf
+  # app_manager = AppManager("/Users/user/ebook.pdf") # 절대 경로
+  # app_manager = AppManager()                        # 기본 경로 (ebook.pdf)
+
+  app_manager = AppManager("~/eBook-PDF/ebook.pdf")
   selector = InteractiveAppSelector(app_manager)
 
   while True:
