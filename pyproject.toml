@@ -1,0 +1,17 @@
+[project]
+name = "ebook-pdf"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.2.1",
+    "keyboard>=0.13.5",
+    "pillow>=11.3.0",
+    "psutil>=7.0.0",
+    "pyobjc-framework-cocoa>=11.1",
+    "pyobjc-framework-quartz>=11.1",
+    "pypdf2>=3.0.1",
+    "reportlab>=4.4.3",
+    "rich>=14.1.0",
+]
